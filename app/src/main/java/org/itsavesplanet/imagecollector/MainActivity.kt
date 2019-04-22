@@ -1,7 +1,11 @@
 package org.itsavesplanet.imagecollector
 
+import android.Manifest
 import android.app.FragmentManager
+import android.content.DialogInterface
+import android.content.Intent
 import android.os.Bundle
+import android.provider.MediaStore
 import android.support.design.widget.NavigationView
 import android.support.design.widget.Snackbar
 import android.support.v4.app.Fragment
@@ -14,11 +18,23 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
 import android.support.v4.view.GravityCompat
 import android.support.v4.widget.DrawerLayout
+import android.support.v7.app.AlertDialog
 import android.view.View
+import android.widget.Button
 import android.widget.Toast
+
+import com.karumi.dexter.Dexter
+import com.karumi.dexter.MultiplePermissionsReport
+import com.karumi.dexter.PermissionToken
+import com.karumi.dexter.listener.PermissionRequest
+import com.karumi.dexter.listener.multi.MultiplePermissionsListener
+import org.itsavesplanet.imagecollector.Constants.Companion
+import org.itsavesplanet.imagecollector.Constants.Companion.CAMERA_CAPTURE_IMAGE_REQUEST_CODE
+import org.itsavesplanet.imagecollector.Constants.Companion.MEDIA_TYPE_IMAGE
 
 
 class MainActivity : AppCompatActivity() {
+//    var imageStoragePath: String? = null
 
 //    private lateinit var drawerLayout: DrawerLayout
 
@@ -76,6 +92,70 @@ class MainActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
+//
+//    /**
+//     * Requesting permissions using Dexter library
+//     */
+//    private fun requestCameraPermission(type: Int) {
+//        Dexter.withActivity(this)
+//            .withPermissions(
+//                Manifest.permission.CAMERA,
+//                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+//                Manifest.permission.RECORD_AUDIO
+//            )
+//            .withListener(object : MultiplePermissionsListener {
+//                override fun onPermissionsChecked(report: MultiplePermissionsReport) {
+//                    if (report.areAllPermissionsGranted()) {
+//
+//                        if (type == MEDIA_TYPE_IMAGE) {
+//                            // capture picture
+//                            captureImage()
+//                        }
+//
+//                    } else if (report.isAnyPermissionPermanentlyDenied()) {
+//                        showPermissionsAlert()
+//                    }
+//                }
+//
+//                override fun onPermissionRationaleShouldBeShown(permissions: List<PermissionRequest>, token: PermissionToken) {
+//                    token.continuePermissionRequest()
+//                }
+//            }).check()
+//    }
+//
+//
+//    /**
+//     * Capturing Camera Image will launch camera app requested image capture
+//     */
+//    private fun captureImage() {
+//        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+//
+//        val file = CameraUtils.getOutputMediaFile(MEDIA_TYPE_IMAGE)
+//        if (file != null) {
+//            imageStoragePath = file.absolutePath
+//        }
+//
+//        val fileUri = CameraUtils.getOutputMediaFileUri(applicationContext, file)
+//
+//        intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri)
+//
+//        // start the image capture Intent
+//        startActivityForResult(intent, CAMERA_CAPTURE_IMAGE_REQUEST_CODE)
+//    }
+//
+//    /**
+//     * Alert dialog to navigate to app settings
+//     * to enable necessary permissions
+//     */
+//    private fun showPermissionsAlert() {
+//        val builder = AlertDialog.Builder(this)
+//        builder.setTitle("Permissions required!")
+//            .setMessage("Camera needs few permissions to work properly. Grant them in settings.")
+//            .setPositiveButton(
+//                "GOTO SETTINGS"
+//            ) { dialog, which -> CameraUtils.openSettings(this@MainActivity) }
+//            .setNegativeButton("CANCEL") { dialog, which -> }.show()
+//    }
 
     /**
      * A native method that is implemented by the 'native-lib' native library,
