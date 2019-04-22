@@ -16,31 +16,37 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-        <!--<TextView-->
-                <!--android:id="@+id/txt_desc"-->
-                <!--android:layout_width="fill_parent"-->
-                <!--android:layout_height="168dp"-->
-                <!--android:gravity="center"-->
-                <!--android:padding="10dp"-->
-                <!--android:text="@string/preview_description"-->
-                <!--android:textSize="15dp" />-->
+        <!--&lt;!&ndash;<TextView&ndash;&gt;-->
+                <!--&lt;!&ndash;android:id="@+id/txt_desc"&ndash;&gt;-->
+                <!--&lt;!&ndash;android:layout_width="fill_parent"&ndash;&gt;-->
+                <!--&lt;!&ndash;android:layout_height="168dp"&ndash;&gt;-->
+                <!--&lt;!&ndash;android:gravity="center"&ndash;&gt;-->
+                <!--&lt;!&ndash;android:padding="10dp"&ndash;&gt;-->
+                <!--&lt;!&ndash;android:text="@string/preview_description"&ndash;&gt;-->
+                <!--&lt;!&ndash;android:textSize="15dp" />&ndash;&gt;-->
 
-        <!-- To display picture taken -->
-        <ImageView
-                android:id="@+id/imgPreview"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:visibility="gone" android:contentDescription="TODO"/>
-
-        <!-- To preview video recorded -->
-        <!--<VideoView-->
-                <!--android:id="@+id/videoPreview"-->
+        <!--&lt;!&ndash; To display picture taken &ndash;&gt;-->
+        <!--<ImageView-->
+                <!--android:id="@+id/imgPreview"-->
                 <!--android:layout_width="match_parent"-->
                 <!--android:layout_height="match_parent"-->
-                <!--android:layout_gravity="center_horizontal"-->
-                <!--android:visibility="gone" />-->
+                <!--android:scaleType="centerCrop"-->
+                <!--android:visibility="gone" android:contentDescription="TODO"/>-->
+
+        <!--&lt;!&ndash; To preview video recorded &ndash;&gt;-->
+        <!--&lt;!&ndash;<VideoView&ndash;&gt;-->
+                <!--&lt;!&ndash;android:id="@+id/videoPreview"&ndash;&gt;-->
+                <!--&lt;!&ndash;android:layout_width="match_parent"&ndash;&gt;-->
+                <!--&lt;!&ndash;android:layout_height="match_parent"&ndash;&gt;-->
+                <!--&lt;!&ndash;android:layout_gravity="center_horizontal"&ndash;&gt;-->
+                <!--&lt;!&ndash;android:visibility="gone" />&ndash;&gt;-->
+        <TextureView
+            android:id="@+id/textureView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+        />
     </LinearLayout>
+
 
     <LinearLayout
             android:layout_width="match_parent"
@@ -48,48 +54,15 @@
             android:orientation="horizontal"
             android:weightSum="2">
 
-        <!-- Capture picture button -->
         <Button
                 android:id="@+id/btnCapturePicture"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="@dimen/dimen_8"
                 android:layout_weight="1"
                 android:background="@color/colorPrimary"
                 android:foreground="?attr/selectableItemBackground"
                 android:text="@string/btn_take_picture"
                 android:textColor="@android:color/white" />
 
-        <!-- Record video button -->
-        <!--<Button-->
-                <!--android:id="@+id/btnRecordVideo"-->
-                <!--android:layout_width="0dp"-->
-                <!--android:layout_height="wrap_content"-->
-                <!--android:layout_marginLeft="@dimen/dimen_8"-->
-                <!--android:layout_weight="1"-->
-                <!--android:background="@color/colorPrimary"-->
-                <!--android:foreground="?attr/selectableItemBackground"-->
-                <!--android:text="@string/btn_record_video"-->
-                <!--android:textColor="@android:color/white" />-->
     </LinearLayout>
 </LinearLayout>
-
-        <!--<?xml version="1.0" encoding="utf-8"?>-->
-        <!--<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
-        <!--xmlns:app="http://schemas.android.com/apk/res-auto"-->
-        <!--xmlns:tools="http://schemas.android.com/tools"-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:layout_height="match_parent"-->
-        <!--app:layout_behavior="@string/appbar_scrolling_view_behavior"-->
-        <!--tools:context=".MainActivity"-->
-        <!--tools:showIn="@layout/activity_main">-->
-
-
-        <!--<Button-->
-        <!--android:text="Button"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content" tools:layout_editor_absoluteY="218dp"-->
-        <!--tools:layout_editor_absoluteX="129dp" android:id="@+id/button2"/>-->
-        <!--</android.support.constraint.ConstraintLayout>-->
-
-
