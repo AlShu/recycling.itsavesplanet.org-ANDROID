@@ -8,4 +8,10 @@
     tools:context=".MainActivity"
     tools:showIn="@layout/activity_main">
 
+    <fragment android:name="org.itsavesplanet.imagecollector.ImageCaptureFragment"
+              android:id="@+id/list"
+              android:layout_weight="1"
+              android:layout_width="0dp"
+              android:layout_height="match_parent" />
+
 </android.support.constraint.ConstraintLayout>
