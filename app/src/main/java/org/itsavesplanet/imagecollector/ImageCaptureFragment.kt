@@ -53,6 +53,7 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.graphics.ImageFormat
+import android.graphics.Matrix
 import android.media.Image
 import android.os.Environment
 import android.support.v4.app.ActivityCompat
@@ -66,20 +67,20 @@ class ImageCaptureFragment : Fragment() {
     var activity: Activity? = null
 
     private val TAG = "AndroidCameraApi"
-    private val takePictureButton: Button? = null
+//    private val takePictureButton: Button? = null
     private var textureView: TextureView? = null
     private var textureListener: TextureView.SurfaceTextureListener? = null
 
 
-    private val ORIENTATIONS = SparseIntArray()
-//    companion object {
-//        init {
-//            ORIENTATIONS.append(Surface.ROTATION_0, 90);
-//            ORIENTATIONS.append(Surface.ROTATION_90, 0);
-//            ORIENTATIONS.append(Surface.ROTATION_180, 270);
-//            ORIENTATIONS.append(Surface.ROTATION_270, 180);
-//        }
-//    }
+    val  ORIENTATIONS = object :  SparseIntArray(4) {
+        init {
+            this.append(Surface.ROTATION_0, 90)
+            this.append(Surface.ROTATION_90, 0)
+            this.append(Surface.ROTATION_180, 270)
+            this.append(Surface.ROTATION_270, 180)
+        }
+    }
+
 
     private val cameraId: String? = null
     private var cameraDevice: CameraDevice? = null
@@ -308,11 +309,11 @@ class ImageCaptureFragment : Fragment() {
             if (characteristics != null) {
                 jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG)
             }
-            var width = 640;
-            var height = 480;
+            var width = 640
+            var height = 480
             if (jpegSizes != null && 0 < jpegSizes?.size) {
-                width = jpegSizes[0].getWidth();
-                height = jpegSizes[0].getHeight();
+                width = jpegSizes[jpegSizes?.size-1].getWidth();
+                height = jpegSizes[jpegSizes?.size-1].getHeight();
             }
             val reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
             val outputSurfaces  = ArrayList<Surface>(2);
@@ -440,29 +441,39 @@ class ImageCaptureFragment : Fragment() {
     protected fun createCameraPreview() {
 
         try {
-                        val texture :SurfaceTexture ?= textureView?.getSurfaceTexture();
-//                        assert texture != null;
-                        texture?.setDefaultBufferSize(imageDimension?.getWidth() ?: 100, imageDimension?.getHeight() ?: 100);
-                         val surface: Surface = Surface(texture)
-                        captureRequestBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                        captureRequestBuilder?.addTarget(surface);
-                        cameraDevice?.createCaptureSession(Arrays.asList(surface), object: CameraCaptureSession.StateCallback(){
-                                    override fun onConfigured(cameraCaptureSession: CameraCaptureSession ) {
-                                        //The camera is already closed
-                                        if (null == cameraDevice) {
-                                            return;
-                                        }
-                                        // When the session is ready, we start displaying the preview.
-                                        cameraCaptureSessions = cameraCaptureSession;
-                                        updatePreview();
-                                    }
-                            override fun onConfigureFailed(cameraCaptureSession: CameraCaptureSession ) {
-                                        Toast.makeText(activity, "Configuration change", Toast.LENGTH_SHORT).show();
-                                    }
-                                }, null);
-            } catch (e: CameraAccessException) {
-                 e.printStackTrace();
-            }
+            val texture: SurfaceTexture? = textureView?.getSurfaceTexture();
+            val width = imageDimension?.getWidth() ?: 100
+            val height = imageDimension?.getHeight() ?: 100
+            texture?.setDefaultBufferSize(width, height)
+            val surface: Surface = Surface(texture)
+
+            val cbr = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            cbr?.addTarget(surface);
+            cameraDevice?.createCaptureSession(
+                Arrays.asList(surface), object : CameraCaptureSession.StateCallback() {
+                    override fun onConfigured(cameraCaptureSession: CameraCaptureSession) {
+                        //The camera is already closed
+                        if (null == cameraDevice) {
+                            return
+                        }
+                        captureRequestBuilder = cbr
+                        // When the session is ready, we start displaying the preview.
+                        cameraCaptureSessions = cameraCaptureSession
+                        val rotation = activity?.getWindowManager()?.getDefaultDisplay()?.getRotation() ?: 0
+                        val rotMatrix = getRotationMatrix(rotation, width.toFloat(), height.toFloat())
+                        textureView?.setTransform(rotMatrix)
+                        updatePreview()
+                    }
+
+                    override fun onConfigureFailed(cameraCaptureSession: CameraCaptureSession) {
+                        Toast.makeText(activity, "Configuration change", Toast.LENGTH_SHORT).show();
+                    }
+                },
+                null
+            )
+        } catch (e: CameraAccessException) {
+            e.printStackTrace()
+        }
     }
 
     private fun closeCamera() {
@@ -491,7 +502,7 @@ class ImageCaptureFragment : Fragment() {
 
     override fun onPause() {
         Log.e(TAG, "onPause")
-        //closeCamera();
+        closeCamera();
         stopBackgroundThread()
         super.onPause()
     }
@@ -508,4 +519,41 @@ class ImageCaptureFragment : Fragment() {
         }
 
     }
+
+   fun getRotationMatrix(mDisplayOrientation: Int, width: Float, height: Float):Matrix {
+       val matrix =  Matrix();
+       val matrix0 = floatArrayOf(
+           0f, 0f, // top left
+           width, 0f, // top right
+           0f, height, // bottom left
+           width, height
+       )
+       val matrix1 = floatArrayOf(
+           0f, height, // top left
+           0f, 0f, // top right
+           width, height, // bottom left
+           width, 0f
+       )
+
+       val matrix2 = floatArrayOf(
+           width, 0f, // top left
+           width, height, // top right
+           0f, 0f, // bottom left
+           0f, height
+       )
+
+        if (mDisplayOrientation % 180 == 90) {
+            matrix.setPolyToPoly(
+                matrix0,
+                0,
+                (if (mDisplayOrientation == 90)  matrix1 else matrix2),
+                0,
+                4
+            )
+        } else if (mDisplayOrientation == 180) {
+            matrix.postRotate(180f, width, height)
+        }
+        return matrix
+    }
+
 }
