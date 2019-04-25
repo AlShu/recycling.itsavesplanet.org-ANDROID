@@ -14,5 +14,4 @@ class Constants {
 
         const val CAMERA_CAPTURE_IMAGE_REQUEST_CODE = 100
     }
-
 }

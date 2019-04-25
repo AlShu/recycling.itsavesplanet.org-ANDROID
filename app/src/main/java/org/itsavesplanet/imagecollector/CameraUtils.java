@@ -92,15 +92,17 @@ public class CameraUtils {
     /**
      * Creates and returns the image or video file before opening the camera
      */
-    public static File getOutputMediaFile(int type) {
+    public static File getOutputMediaFile(String sessionUid, int type) {
 
         // External sdcard location
         File mediaStorageDir = new File(
-                Environment
-                        .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
-                GALLERY_DIRECTORY_NAME);
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                        + File.separator
+                        + GALLERY_DIRECTORY_NAME
+                        + File.separator
+                        + sessionUid
+        );
 
-        // Create the storage directory if it does not exist
         if (!mediaStorageDir.exists()) {
             if (!mediaStorageDir.mkdirs()) {
                 Log.e(GALLERY_DIRECTORY_NAME, "Oops! Failed create "
@@ -109,8 +111,6 @@ public class CameraUtils {
             }
         }
 
-        // Preparing media file naming convention
-        // adds timestamp
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss",
                 Locale.getDefault()).format(new Date());
         File mediaFile;

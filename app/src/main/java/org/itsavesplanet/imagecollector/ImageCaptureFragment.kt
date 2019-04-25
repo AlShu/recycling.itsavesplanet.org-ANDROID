@@ -60,11 +60,13 @@ import android.support.v4.app.ActivityCompat
 import java.io.*
 import java.nio.ByteBuffer
 import java.util.*
+import kotlin.math.abs
 
 
 class ImageCaptureFragment : Fragment() {
     var imageStoragePath: String? = null
     var activity: Activity? = null
+    var sessionUid: String? = null
 
     private val TAG = "AndroidCameraApi"
 //    private val takePictureButton: Button? = null
@@ -120,8 +122,7 @@ class ImageCaptureFragment : Fragment() {
         textureView = view.textureView
         textureListener = object : TextureView.SurfaceTextureListener {
             override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
-                //open your camera here
-                openCamera();
+                openCamera()
             }
 
             override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {
@@ -129,7 +130,7 @@ class ImageCaptureFragment : Fragment() {
             }
 
             override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
-                return false;
+                return false
             }
 
             override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
@@ -140,11 +141,11 @@ class ImageCaptureFragment : Fragment() {
             textureListener
         )
 
+        genSessionUid();
 
         view.btnCapturePicture.setOnClickListener(
             View.OnClickListener {
                 if (CameraUtils.checkPermissions(activity?.getApplicationContext())) {
-//                    captureImage()
                     takePicture()
                 } else {
                     requestCameraPermission(MEDIA_TYPE_IMAGE, activity as Activity)
@@ -153,7 +154,9 @@ class ImageCaptureFragment : Fragment() {
         )
     }
 
-
+    fun genSessionUid(){
+        sessionUid = UUID.randomUUID().toString()
+    }
 
 
     /**
@@ -170,8 +173,7 @@ class ImageCaptureFragment : Fragment() {
                     if (report.areAllPermissionsGranted()) {
 
                         if (type == MEDIA_TYPE_IMAGE) {
-                            // capture picture
-                            captureImage()
+//                            takePicture()
                         }
 
                     } else if (report.isAnyPermissionPermanentlyDenied()) {
@@ -188,26 +190,6 @@ class ImageCaptureFragment : Fragment() {
             }).check()
     }
 
-
-    /**
-     * Capturing Camera Image will launch camera app requested image capture
-     */
-    private fun captureImage() {
-        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-
-        val file = CameraUtils.getOutputMediaFile(MEDIA_TYPE_IMAGE)
-        if (file != null) {
-            imageStoragePath = file.absolutePath
-        }
-
-//        val fileUri = CameraUtils.getOutputMediaFileUri(activity?.getApplicationContext(), file)
-        val fileUri = CameraUtils.getOutputMediaFileUri(activity as Context, file)
-
-        intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri)
-
-        // start the image capture Intent
-        startActivityForResult(intent, Constants.CAMERA_CAPTURE_IMAGE_REQUEST_CODE)
-    }
 
     /**
      * Alert dialog to navigate to app settings
@@ -295,6 +277,37 @@ class ImageCaptureFragment : Fragment() {
 
     }
 
+    data class Resolution(val width: Int, val height: Int)
+
+    private fun getImageSize(): Resolution {
+        val camDev = cameraDevice
+        val manager = activity?.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        val characteristics = manager.getCameraCharacteristics(camDev?.getId())
+        var jpegSizes: Array<Size>? = null
+        if (characteristics != null) {
+            jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                .getOutputSizes(ImageFormat.JPEG)
+        }
+        var width = 640
+        var height = 480
+        var size: Size ?= null
+        var minError: Int ?=  null
+        if (jpegSizes != null && 0 < jpegSizes?.size) {
+            for (candidate in jpegSizes) {
+                val wCandidate = candidate.getWidth()
+                val hCandidate = candidate.getHeight()
+                val error = abs(wCandidate * hCandidate - width * height)
+                if (minError == null || minError > error) {
+                    minError = error
+                    size = candidate
+                }
+            }
+        }
+        width = size?.width ?: width
+        height = size?.height ?: height
+
+        return Resolution(width, height)
+    }
 
     private fun takePicture() {
         val camDev = cameraDevice
@@ -302,19 +315,8 @@ class ImageCaptureFragment : Fragment() {
             Log.e(TAG, "cameraDevice is null");
             return
         }
-        val manager = activity?.getSystemService(Context.CAMERA_SERVICE) as CameraManager
         try {
-            val characteristics = manager.getCameraCharacteristics(camDev.getId());
-            var jpegSizes: Array<Size>  ?= null
-            if (characteristics != null) {
-                jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG)
-            }
-            var width = 640
-            var height = 480
-            if (jpegSizes != null && 0 < jpegSizes?.size) {
-                width = jpegSizes[jpegSizes?.size-1].getWidth();
-                height = jpegSizes[jpegSizes?.size-1].getHeight();
-            }
+            var (width, height) = getImageSize()
             val reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
             val outputSurfaces  = ArrayList<Surface>(2);
             outputSurfaces.add(reader.getSurface());
@@ -325,7 +327,11 @@ class ImageCaptureFragment : Fragment() {
             // Orientation
             val rotation = activity?.getWindowManager()?.getDefaultDisplay()?.getRotation() ?: 0;
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation))
-            val file = File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/pic.jpg");
+
+            val file = CameraUtils.getOutputMediaFile(sessionUid, MEDIA_TYPE_IMAGE)
+            if (file != null) {
+                imageStoragePath = file.absolutePath
+            }
             val readerListener = object : ImageReader.OnImageAvailableListener {
                 override fun onImageAvailable(reader: ImageReader) {
                     var image: Image ?= null
@@ -334,12 +340,12 @@ class ImageCaptureFragment : Fragment() {
                         val buffer: ByteBuffer = image.getPlanes()[0].getBuffer()
                         save(buffer)
                     } catch (e: FileNotFoundException ) {
-                        e.printStackTrace();
+                        e.printStackTrace()
                     } catch (e: IOException) {
-                        e.printStackTrace();
+                        e.printStackTrace()
                     } finally {
                         if (image != null) {
-                            image.close();
+                            image.close()
                         }
                     }
                 }
@@ -354,30 +360,31 @@ class ImageCaptureFragment : Fragment() {
                         }
                     }
                 }
-            };
+            }
 
             reader.setOnImageAvailableListener(readerListener, mBackgroundHandler);
             val captureListener = object: CameraCaptureSession.CaptureCallback() {
                 override fun onCaptureCompleted( session: CameraCaptureSession,  request: CaptureRequest,  result: TotalCaptureResult) {
                     super.onCaptureCompleted(session, request, result);
-                    Toast.makeText(activity, "Saved:" + file, Toast.LENGTH_SHORT).show();
-//                    createCameraPreview();
+                    Toast.makeText(activity, "Saved:" + file, Toast.LENGTH_SHORT).show()
+                    createCameraPreview()
                 }
-            };
+            }
             val callBack = object:  CameraCaptureSession.StateCallback() {
                 override fun onConfigured(session: CameraCaptureSession ) {
                     try {
-                        session.capture(captureBuilder.build(), captureListener, mBackgroundHandler);
+                        session.capture(captureBuilder.build(), captureListener, mBackgroundHandler)
                     } catch (e: CameraAccessException) {
-                        e.printStackTrace();
+                        e.printStackTrace()
                     }
                 }
                 override fun onConfigureFailed(session: CameraCaptureSession ) {
+                    1+1
                 }
             }
-            camDev.createCaptureSession(outputSurfaces, callBack, mBackgroundHandler);
+            camDev.createCaptureSession(outputSurfaces, callBack, mBackgroundHandler)
         } catch (e: CameraAccessException) {
-            e.printStackTrace();
+            e.printStackTrace()
         }
     }
 
@@ -386,7 +393,6 @@ class ImageCaptureFragment : Fragment() {
         val act = activity
         if (act != null) {
             val manager = act.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-//        val manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE)
             Log.e(TAG, "is camera open");
             try {
                 val cameraId = manager.getCameraIdList()[0];
@@ -408,13 +414,13 @@ class ImageCaptureFragment : Fragment() {
                     ) != PackageManager.PERMISSION_GRANTED
                 ) {
 //                ActivityCompat.requestPermissions(AndroidCameraApi.this, new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
-                    return;
+                    return
                 }
 
-                manager.openCamera(cameraId, stateCallback, null);
+                manager.openCamera(cameraId, stateCallback, null)
 
             } catch (e: CameraAccessException) {
-                e.printStackTrace();
+                e.printStackTrace()
             }
             Log.e(TAG, "openCamera X");
         }
@@ -447,7 +453,7 @@ class ImageCaptureFragment : Fragment() {
             texture?.setDefaultBufferSize(width, height)
             val surface: Surface = Surface(texture)
 
-            val cbr = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            val cbr = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
             cbr?.addTarget(surface);
             cameraDevice?.createCaptureSession(
                 Arrays.asList(surface), object : CameraCaptureSession.StateCallback() {
@@ -459,9 +465,9 @@ class ImageCaptureFragment : Fragment() {
                         captureRequestBuilder = cbr
                         // When the session is ready, we start displaying the preview.
                         cameraCaptureSessions = cameraCaptureSession
-                        val rotation = activity?.getWindowManager()?.getDefaultDisplay()?.getRotation() ?: 0
-                        val rotMatrix = getRotationMatrix(rotation, width.toFloat(), height.toFloat())
-                        textureView?.setTransform(rotMatrix)
+//                        val rotation = activity?.getWindowManager()?.getDefaultDisplay()?.getRotation() ?: 0
+//                        val rotMatrix = getRotationMatrix(rotation, width.toFloat(), height.toFloat())
+//                        textureView?.setTransform(rotMatrix)
                         updatePreview()
                     }
 
@@ -502,7 +508,7 @@ class ImageCaptureFragment : Fragment() {
 
     override fun onPause() {
         Log.e(TAG, "onPause")
-        closeCamera();
+//        closeCamera();
         stopBackgroundThread()
         super.onPause()
     }
