@@ -6,6 +6,7 @@ package org.itsavesplanet.imagecollector
 import android.app.Activity
 import android.Manifest
 import android.content.Context
+import android.content.Context.SENSOR_SERVICE
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.SurfaceTexture
@@ -54,9 +55,11 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.graphics.ImageFormat
 import android.graphics.Matrix
+import android.hardware.SensorManager
 import android.media.Image
 import android.os.Environment
 import android.support.v4.app.ActivityCompat
+import org.itsavesplanet.imagecollector.sensors.Accelerometer
 import java.io.*
 import java.nio.ByteBuffer
 import java.util.*
@@ -67,6 +70,9 @@ class ImageCaptureFragment : Fragment() {
     var imageStoragePath: String? = null
     var activity: Activity? = null
     var sessionUid: String? = null
+    var imagesCnt: Int = 0
+//    private var mSensorManager: SensorManager? = null
+    private var accelerometer:  Accelerometer? = null
 
     private val TAG = "AndroidCameraApi"
 //    private val takePictureButton: Button? = null
@@ -137,19 +143,36 @@ class ImageCaptureFragment : Fragment() {
             }
         }
 
+
+        genSessionUid()
+        val context = activity!!.getApplicationContext()
+        if (!CameraUtils.checkPermissions(activity?.getApplicationContext())) {
+            requestCameraPermission(MEDIA_TYPE_IMAGE, activity as Activity)
+        }
         view.textureView.setSurfaceTextureListener(
             textureListener
         )
-
-        genSessionUid();
-
+        val mSensorManager =  activity?.getSystemService(SENSOR_SERVICE) as SensorManager
+        val accelerometer = Accelerometer(mSensorManager, context,  CameraUtils.getOutputAccelerometrFile(sessionUid, "1-0-0"))
         view.btnCapturePicture.setOnClickListener(
             View.OnClickListener {
-                if (CameraUtils.checkPermissions(activity?.getApplicationContext())) {
+                if (CameraUtils.checkPermissions(context)) {
+                    if (imagesCnt == 0) {
+                        accelerometer.startSimulation()
+                    }
+                    imagesCnt++
+                    view.btnCapturePicture.text = imagesCnt.toString()
                     takePicture()
                 } else {
                     requestCameraPermission(MEDIA_TYPE_IMAGE, activity as Activity)
                 }
+            }
+        )
+
+        view.btnStopCapturePicture.setOnClickListener(
+            View.OnClickListener {
+                view.btnCapturePicture.text = "Processing"
+                accelerometer.stopSimulation()
             }
         )
     }

@@ -89,10 +89,7 @@ public class CameraUtils {
         return FileProvider.getUriForFile(context, context.getPackageName() + ".provider", file);
     }
 
-    /**
-     * Creates and returns the image or video file before opening the camera
-     */
-    public static File getOutputMediaFile(String sessionUid, int type) {
+    public static File getMediaStorageDir(String sessionUid) {
 
         // External sdcard location
         File mediaStorageDir = new File(
@@ -102,7 +99,6 @@ public class CameraUtils {
                         + File.separator
                         + sessionUid
         );
-
         if (!mediaStorageDir.exists()) {
             if (!mediaStorageDir.mkdirs()) {
                 Log.e(GALLERY_DIRECTORY_NAME, "Oops! Failed create "
@@ -110,6 +106,15 @@ public class CameraUtils {
                 return null;
             }
         }
+        return mediaStorageDir;
+    }
+
+    /**
+     * Creates and returns the image or video file before opening the camera
+     */
+    public static File getOutputMediaFile(String sessionUid, int type) {
+
+        File mediaStorageDir = getMediaStorageDir(sessionUid);
 
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss",
                 Locale.getDefault()).format(new Date());
@@ -122,6 +127,15 @@ public class CameraUtils {
         }
 
         return mediaFile;
+    }
+
+    public static File getOutputAccelerometrFile(String sessionUid, String version) {
+
+        File mediaStorageDir = getMediaStorageDir(sessionUid);
+
+        return new File(mediaStorageDir.getPath()
+                + File.separator
+                + sessionUid + ".accelerometer.v" + version + ".data");
     }
 
 }

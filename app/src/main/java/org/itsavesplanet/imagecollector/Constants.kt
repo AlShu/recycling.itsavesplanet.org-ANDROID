@@ -12,6 +12,7 @@ class Constants {
         // Image and Video file extensions
         const val IMAGE_EXTENSION = "jpg"
 
+
         const val CAMERA_CAPTURE_IMAGE_REQUEST_CODE = 100
     }
 }
