@@ -2,6 +2,7 @@
 https://inducesmile.com/android/android-camera2-api-example-tutorial/
 */
 package org.itsavesplanet.imagecollector
+
 //import android.app.Fragment
 import android.app.Activity
 import android.Manifest
@@ -60,6 +61,8 @@ import android.media.Image
 import android.os.Environment
 import android.support.v4.app.ActivityCompat
 import org.itsavesplanet.imagecollector.sensors.Accelerometer
+import org.itsavesplanet.imagecollector.sensors.Gyroscope
+import org.itsavesplanet.imagecollector.sensors.LinearAccelerometer
 import java.io.*
 import java.nio.ByteBuffer
 import java.util.*
@@ -71,16 +74,12 @@ class ImageCaptureFragment : Fragment() {
     var activity: Activity? = null
     var sessionUid: String? = null
     var imagesCnt: Int = 0
-//    private var mSensorManager: SensorManager? = null
-    private var accelerometer:  Accelerometer? = null
-
     private val TAG = "AndroidCameraApi"
-//    private val takePictureButton: Button? = null
     private var textureView: TextureView? = null
     private var textureListener: TextureView.SurfaceTextureListener? = null
 
 
-    val  ORIENTATIONS = object :  SparseIntArray(4) {
+    val ORIENTATIONS = object : SparseIntArray(4) {
         init {
             this.append(Surface.ROTATION_0, 90)
             this.append(Surface.ROTATION_90, 0)
@@ -98,8 +97,8 @@ class ImageCaptureFragment : Fragment() {
     private val imageDimension: Size? = null
     private var imageReader: ImageReader? = null
     private val file: File? = null
-    private val REQUEST_CAMERA_PERMISSION = 200
-    private val mFlashSupported: Boolean = false
+    //    private val REQUEST_CAMERA_PERMISSION = 200
+//    private val mFlashSupported: Boolean = false
     private var mBackgroundHandler: Handler? = null
     private var mBackgroundThread: HandlerThread? = null
 
@@ -152,13 +151,30 @@ class ImageCaptureFragment : Fragment() {
         view.textureView.setSurfaceTextureListener(
             textureListener
         )
-        val mSensorManager =  activity?.getSystemService(SENSOR_SERVICE) as SensorManager
-        val accelerometer = Accelerometer(mSensorManager, context,  CameraUtils.getOutputAccelerometrFile(sessionUid, "1-0-0"))
+        val mSensorManager = activity?.getSystemService(SENSOR_SERVICE) as SensorManager
+        val accelerometer =
+            Accelerometer(
+                mSensorManager,
+                context,
+                CameraUtils.getOutputMediaFile("accelerometer", sessionUid, Constants.DATA_EXTENSION)
+            )
+        val gyroscope = Gyroscope(
+            mSensorManager,
+            context,
+            CameraUtils.getOutputMediaFile("gyroscope", sessionUid, Constants.DATA_EXTENSION)
+        )
+        val linearAccelerometer = LinearAccelerometer(
+            mSensorManager,
+            context,
+            CameraUtils.getOutputMediaFile("linear_accelerometer", sessionUid, Constants.DATA_EXTENSION)
+        )
         view.btnCapturePicture.setOnClickListener(
             View.OnClickListener {
                 if (CameraUtils.checkPermissions(context)) {
                     if (imagesCnt == 0) {
                         accelerometer.startSimulation()
+                        linearAccelerometer.startSimulation()
+                        gyroscope.startSimulation()
                     }
                     imagesCnt++
                     view.btnCapturePicture.text = imagesCnt.toString()
@@ -173,11 +189,13 @@ class ImageCaptureFragment : Fragment() {
             View.OnClickListener {
                 view.btnCapturePicture.text = "Processing"
                 accelerometer.stopSimulation()
+                linearAccelerometer.stopSimulation()
+                gyroscope.stopSimulation()
             }
         )
     }
 
-    fun genSessionUid(){
+    fun genSessionUid() {
         sessionUid = UUID.randomUUID().toString()
     }
 
@@ -313,8 +331,8 @@ class ImageCaptureFragment : Fragment() {
         }
         var width = 640
         var height = 480
-        var size: Size ?= null
-        var minError: Int ?=  null
+        var size: Size? = null
+        var minError: Int? = null
         if (jpegSizes != null && 0 < jpegSizes?.size) {
             for (candidate in jpegSizes) {
                 val wCandidate = candidate.getWidth()
@@ -334,14 +352,14 @@ class ImageCaptureFragment : Fragment() {
 
     private fun takePicture() {
         val camDev = cameraDevice
-        if(null == camDev) {
+        if (null == camDev) {
             Log.e(TAG, "cameraDevice is null");
             return
         }
         try {
             var (width, height) = getImageSize()
             val reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
-            val outputSurfaces  = ArrayList<Surface>(2);
+            val outputSurfaces = ArrayList<Surface>(2);
             outputSurfaces.add(reader.getSurface());
             outputSurfaces.add(Surface(textureView?.getSurfaceTexture()));
             val captureBuilder = camDev.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
@@ -351,18 +369,18 @@ class ImageCaptureFragment : Fragment() {
             val rotation = activity?.getWindowManager()?.getDefaultDisplay()?.getRotation() ?: 0;
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation))
 
-            val file = CameraUtils.getOutputMediaFile(sessionUid, MEDIA_TYPE_IMAGE)
+            val file = CameraUtils.getOutputMediaFile("img.$imagesCnt", sessionUid, Constants.IMAGE_EXTENSION)
             if (file != null) {
                 imageStoragePath = file.absolutePath
             }
             val readerListener = object : ImageReader.OnImageAvailableListener {
                 override fun onImageAvailable(reader: ImageReader) {
-                    var image: Image ?= null
+                    var image: Image? = null
                     try {
                         image = reader.acquireLatestImage();
                         val buffer: ByteBuffer = image.getPlanes()[0].getBuffer()
                         save(buffer)
-                    } catch (e: FileNotFoundException ) {
+                    } catch (e: FileNotFoundException) {
                         e.printStackTrace()
                     } catch (e: IOException) {
                         e.printStackTrace()
@@ -372,8 +390,9 @@ class ImageCaptureFragment : Fragment() {
                         }
                     }
                 }
-                fun save( bytes : ByteBuffer) {
-                    var output: OutputStream?= null
+
+                fun save(bytes: ByteBuffer) {
+                    var output: OutputStream? = null
                     try {
                         val output = FileOutputStream(file)
                         output.getChannel().write(bytes)
@@ -386,23 +405,28 @@ class ImageCaptureFragment : Fragment() {
             }
 
             reader.setOnImageAvailableListener(readerListener, mBackgroundHandler);
-            val captureListener = object: CameraCaptureSession.CaptureCallback() {
-                override fun onCaptureCompleted( session: CameraCaptureSession,  request: CaptureRequest,  result: TotalCaptureResult) {
+            val captureListener = object : CameraCaptureSession.CaptureCallback() {
+                override fun onCaptureCompleted(
+                    session: CameraCaptureSession,
+                    request: CaptureRequest,
+                    result: TotalCaptureResult
+                ) {
                     super.onCaptureCompleted(session, request, result);
                     Toast.makeText(activity, "Saved:" + file, Toast.LENGTH_SHORT).show()
                     createCameraPreview()
                 }
             }
-            val callBack = object:  CameraCaptureSession.StateCallback() {
-                override fun onConfigured(session: CameraCaptureSession ) {
+            val callBack = object : CameraCaptureSession.StateCallback() {
+                override fun onConfigured(session: CameraCaptureSession) {
                     try {
                         session.capture(captureBuilder.build(), captureListener, mBackgroundHandler)
                     } catch (e: CameraAccessException) {
                         e.printStackTrace()
                     }
                 }
-                override fun onConfigureFailed(session: CameraCaptureSession ) {
-                    1+1
+
+                override fun onConfigureFailed(session: CameraCaptureSession) {
+                    1 + 1
                 }
             }
             camDev.createCaptureSession(outputSurfaces, callBack, mBackgroundHandler)
@@ -519,13 +543,13 @@ class ImageCaptureFragment : Fragment() {
     }
 
     override fun onResume() {
-        super.onResume();
-        Log.e(TAG, "onResume");
-        startBackgroundThread();
+        super.onResume()
+        Log.e(TAG, "onResume")
+        startBackgroundThread()
         if (textureView?.isAvailable() ?: false) {
-            openCamera();
+            openCamera()
         } else {
-            textureView?.setSurfaceTextureListener(textureListener);
+            textureView?.setSurfaceTextureListener(textureListener)
         }
     }
 
@@ -549,33 +573,33 @@ class ImageCaptureFragment : Fragment() {
 
     }
 
-   fun getRotationMatrix(mDisplayOrientation: Int, width: Float, height: Float):Matrix {
-       val matrix =  Matrix();
-       val matrix0 = floatArrayOf(
-           0f, 0f, // top left
-           width, 0f, // top right
-           0f, height, // bottom left
-           width, height
-       )
-       val matrix1 = floatArrayOf(
-           0f, height, // top left
-           0f, 0f, // top right
-           width, height, // bottom left
-           width, 0f
-       )
+    fun getRotationMatrix(mDisplayOrientation: Int, width: Float, height: Float): Matrix {
+        val matrix = Matrix();
+        val matrix0 = floatArrayOf(
+            0f, 0f, // top left
+            width, 0f, // top right
+            0f, height, // bottom left
+            width, height
+        )
+        val matrix1 = floatArrayOf(
+            0f, height, // top left
+            0f, 0f, // top right
+            width, height, // bottom left
+            width, 0f
+        )
 
-       val matrix2 = floatArrayOf(
-           width, 0f, // top left
-           width, height, // top right
-           0f, 0f, // bottom left
-           0f, height
-       )
+        val matrix2 = floatArrayOf(
+            width, 0f, // top left
+            width, height, // top right
+            0f, 0f, // bottom left
+            0f, height
+        )
 
         if (mDisplayOrientation % 180 == 90) {
             matrix.setPolyToPoly(
                 matrix0,
                 0,
-                (if (mDisplayOrientation == 90)  matrix1 else matrix2),
+                (if (mDisplayOrientation == 90) matrix1 else matrix2),
                 0,
                 4
             )

@@ -10,6 +10,7 @@ import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.Settings;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.FileProvider;
 import android.util.Log;
@@ -112,30 +113,26 @@ public class CameraUtils {
     /**
      * Creates and returns the image or video file before opening the camera
      */
-    public static File getOutputMediaFile(String sessionUid, int type) {
+    public static File getOutputMediaFile(String dataKind, String sessionUid, String extension) {
 
         File mediaStorageDir = getMediaStorageDir(sessionUid);
 
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss",
-                Locale.getDefault()).format(new Date());
         File mediaFile;
-        if (type == MEDIA_TYPE_IMAGE) {
-            mediaFile = new File(mediaStorageDir.getPath() + File.separator
-                    + "IMG_" + timeStamp + "." + IMAGE_EXTENSION);
-        } else {
-            return null;
-        }
+        mediaFile = new File(mediaStorageDir.getPath()
+                + File.separator
+                + dataKind + "." + extension);
 
         return mediaFile;
     }
 
-    public static File getOutputAccelerometrFile(String sessionUid, String version) {
-
-        File mediaStorageDir = getMediaStorageDir(sessionUid);
-
-        return new File(mediaStorageDir.getPath()
-                + File.separator
-                + sessionUid + ".accelerometer.v" + version + ".data");
-    }
+//    @NonNull
+//    public static File getOutputDataFile(String dataKind, String sessionUid, String version) {
+//
+//        File mediaStorageDir = getMediaStorageDir(sessionUid);
+//
+//        return new File(mediaStorageDir.getPath()
+//                + File.separator
+//                + dataKind + ".v" + version + ".data");
+//    }
 
 }

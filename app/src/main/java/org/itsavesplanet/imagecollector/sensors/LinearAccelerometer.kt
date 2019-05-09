@@ -7,10 +7,10 @@ import java.io.File
 
 //https://github.com/googlesamples/android-AccelerometerPlay/blob/master/app/src/main/java/com/example/android/accelerometerplay/AccelerometerPlayActivity.java
 
-internal class Accelerometer(sensorManager: SensorManager, context: Context, file: File) :
+internal class LinearAccelerometer(sensorManager: SensorManager, context: Context, file: File) :
     CommonSensorListener(sensorManager, context, file) {
 
     override fun sensorType(): Int {
-        return Sensor.TYPE_ACCELEROMETER
+        return Sensor.TYPE_LINEAR_ACCELERATION
     }
 }

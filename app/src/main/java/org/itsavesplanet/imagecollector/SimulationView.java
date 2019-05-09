@@ -11,7 +11,7 @@ class SimulationView  {
 //        private final int mDstWidth;
 //        private final int mDstHeight;
 //
-//        private Sensor mAccelerometer;
+//        private CommonSensorListener mAccelerometer;
 //        private long mLastT;
 //
 //        private float mXDpi;
@@ -215,7 +215,7 @@ class SimulationView  {
 //
 //        public SimulationView(Context context) {
 //            super(context);
-//            mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+//            mAccelerometer = mSensorManager.getDefaultSensor(CommonSensorListener.TYPE_ACCELEROMETER);
 //
 //            DisplayMetrics metrics = new DisplayMetrics();
 //            getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -246,7 +246,7 @@ class SimulationView  {
 //
 //        @Override
 //        public void onSensorChanged(SensorEvent event) {
-//            if (event.sensor.getType() != Sensor.TYPE_ACCELEROMETER)
+//            if (event.sensor.getType() != CommonSensorListener.TYPE_ACCELEROMETER)
 //                return;
 //            /*
 //             * record the accelerometer data, the event's timestamp as well as
@@ -312,7 +312,7 @@ class SimulationView  {
 //        }
 //
 //        @Override
-//        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+//        public void onAccuracyChanged(CommonSensorListener sensor, int accuracy) {
 //        }
 //    }
 }
