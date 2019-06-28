@@ -42,7 +42,7 @@ class ServerAPI(private val base_url: String) {
             val reader: BufferedReader = BufferedReader(InputStreamReader(connection.inputStream))
 //            TODO: parse json, get url
             val output: String = reader.readLine()
-            return output
+            return ""
         } catch (exception: Exception) {
 
         }
@@ -57,5 +57,6 @@ class ServerAPI(private val base_url: String) {
                 throw Exception("Exception while ")
             }
         }
+        return ""
     }
 }
